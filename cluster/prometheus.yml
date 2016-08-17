@@ -1,0 +1,70 @@
+# https://github.com/prometheus/prometheus/blob/master/documentation/examples/prometheus-kubernetes.yml
+global:
+  scrape_interval: 5m
+  scrape_timeout: 10s
+  evaluation_interval: 1m
+
+
+rule_files:
+  - kube.rules
+
+scrape_configs:
+- job_name: 'kubernetes-nodes-cadvisor'
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  kubernetes_sd_configs:
+  - api_servers:
+    - 'https://kubernetes.default.svc'
+    in_cluster: true
+    role: node
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)
+  - source_labels: [__meta_kubernetes_role]
+    action: replace
+    target_label: kubernetes_role
+  - source_labels: [__address__]
+    regex: '(.*):10250'
+    replacement: '${1}:10255'
+    target_label: __address__
+
+- job_name: 'kubernetes-apiserver-cadvisor'
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  kubernetes_sd_configs:
+  - api_servers:
+    - 'https://kubernetes.default.svc'
+    in_cluster: true
+    role: apiserver
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)
+  - source_labels: [__meta_kubernetes_role]
+    action: replace
+    target_label: kubernetes_role
+  - source_labels: [__address__]
+    regex: '(.*):10250'
+    replacement: '${1}:10255'
+    target_label: __address__
+
+- job_name: 'kubernetes-node-exporter'
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  kubernetes_sd_configs:
+  - api_servers:
+    - 'https://kubernetes.default.svc'
+    in_cluster: true
+    role: node
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_node_label_(.+)
+  - source_labels: [__meta_kubernetes_role]
+    action: replace
+    target_label: kubernetes_role
+  - source_labels: [__address__]
+    regex: '(.*):10250'
+    replacement: '${1}:9100'
+    target_label: __address__

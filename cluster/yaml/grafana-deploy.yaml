@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: graf-prom-cluster
+  namespace: kube-system
+  labels:
+    tier: cluster
+    role: grafana
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        tier: cluster
+        role: grafana
+    spec:
+      serviceAccount: default
+      containers:
+      - name: graf-prom-cluster
+        image: grafana/grafana:3.1.1
+        volumeMounts:
+        - name: storage
+          mountPath: /var/lib/grafana 
+        ports:
+        - containerPort: 3000
+          name: grafport
+          protocol: TCP
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: graf-prom-cluster-vol
+
+

@@ -1,0 +1,72 @@
+#ALERT <alert name>
+# IF <expression>
+#  [ FOR <duration> ]
+#  [ LABELS <label set> ]
+#  [ ANNOTATIONS <label set> ]
+ALERT kublet_docker_errors
+  IF changes(kubelet_docker_errors[5m]) >= 1
+  LABELS { severity = "warn" }
+  ANNOTATIONS {
+    summary = "kublet docker errors on {{ $labels.instance }}",
+    description = "{{ $labels.instance }}  (current value: {{ $value }}s)",
+  }
+
+ALERT InstanceDown
+  IF up == 0
+  FOR 5m
+  LABELS { severity = "page" }
+  ANNOTATIONS {
+    summary = "Instance {{ $labels.instance }} down",
+    description = "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.",
+  }
+
+
+# warn on high cluster memory
+ALERT HighClusterMemoryWARN
+  IF ((sum(node_memory_MemTotal) - sum(node_memory_MemFree+node_memory_Buffers+node_memory_Cached) ) / sum(node_memory_MemTotal) * 100 ) > 80
+  FOR 5m
+  LABELS { severity = "warn" }
+  ANNOTATIONS {
+    summary = "Cluster Memory Usage High",
+    description = "Cluster memory usage at {{ $value }}% for over 5m"
+  }
+
+# warn on high cluster fs usage
+ALERT HighFileSystemUsedWARN
+  IF ((sum(node_filesystem_size) - sum(node_filesystem_free) ) / sum(node_filesystem_size) * 100) > 80
+  FOR 5m
+  LABELS { severity = "warn" }
+  ANNOTATIONS {
+    summary = "Cluster FileSystem Used High",
+    description = "Cluster fs used at {{ $value }}% for over 5m"
+  }
+
+# warn on high cluster memory
+ALERT HighClusterMemoryPAGE
+  IF ((sum(node_memory_MemTotal) - sum(node_memory_MemFree+node_memory_Buffers+node_memory_Cached) ) / sum(node_memory_MemTotal) * 100 ) > 90
+  FOR 5m
+  LABELS { severity = "page" }
+  ANNOTATIONS {
+    summary = "Cluster Memory Usage High",
+    description = "Cluster memory usage at {{ $value }}% for over 5m"
+  }
+
+# warn on high cluster fs usage
+ALERT HighFileSystemUsedPAGE
+  IF ((sum(node_filesystem_size) - sum(node_filesystem_free) ) / sum(node_filesystem_size) * 100) > 90
+  FOR 5m
+  LABELS { severity = "page" }
+  ANNOTATIONS {
+    summary = "Cluster FileSystem Used High",
+    description = "Cluster fs used at {{ $value }}% for over 5m"
+  }
+
+ALERT ScrapeDurationSecondsHigh
+  IF scrape_duration_seconds > 4 
+  LABELS { severity = "warn" }
+  ANNOTATIONS {
+    summary = "Scrape Duration in Seconds High",
+    description = "Scrape Duration in Seconds at {{ $value }}s, threshold 4 seconds"
+  }
+
+

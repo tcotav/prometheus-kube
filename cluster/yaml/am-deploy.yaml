@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: am-cluster
+  namespace: kube-system
+  labels:
+    role: alertmanager
+    tier: cluster
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        role: alertmanager
+        tier: cluster
+    spec:
+      serviceAccount: default
+      containers:
+      - name: am-cluster
+        image: prom/alertmanager:v0.3.0
+        command: [ "/am/alertmanager",  
+             "-config.file=/amconfig/config.yml", 
+             "-storage.path=/amdata"]
+        securityContext:
+          privileged: true
+        ports:
+        - containerPort: 9093
+          name: amport
+          protocol: TCP
+        volumeMounts:
+        - name: config-volume
+          mountPath: /amconfig
+      volumes:
+      - name: config-volume
+        configMap:
+          name: test-prom-config
+          items:
+            - key: am-config
+              path: config.yml
+

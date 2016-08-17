@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: prom-cluster
+  namespace: kube-system
+  labels:
+    role: prometheus
+    tier: cluster
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        role: prometheus
+        tier: cluster
+    spec:
+      serviceAccount: default
+      containers:
+      - name: prom-cluster
+        image: prom/prometheus:v1.0.1
+        command: [ "/bin/prometheus" ,
+             "-config.file=/etc/prometheus/prometheus.yml", 
+             "-storage.local.path=/prometheus",
+             "-storage.local.retention=72h",
+             "-alertmanager.url=http://am-cluster:9093",
+             "-web.console.libraries=/etc/prometheus/console_libraries", 
+             "-web.console.templates=/etc/prometheus/consoles"]
+        securityContext:
+          privileged: true
+        ports:
+        - containerPort: 9090
+          name: promport
+          protocol: TCP
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus
+        - name: storage
+          mountPath: /prometheus
+      volumes:
+      - name: config-volume
+        configMap:
+          name: cluster-prom-config
+          items:
+            - key: prom-config
+              path: prometheus.yml
+            - key: prom-rules
+              path: kube.rules
+      - name: storage 
+        persistentVolumeClaim:
+          claimName: prom-cluster-volume
