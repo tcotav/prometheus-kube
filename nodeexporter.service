@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus Node Exporter
+After=docker.service
+Requires=docker.service
+
+[Service]
+Restart=always
+ExecStartPre=-/usr/bin/docker stop nodex
+ExecStartPre=-/usr/bin/docker rm nodex
+ExecStartPre=-/usr/bin/docker pull prom/node-exporter
+ExecStart=/usr/bin/docker run -p 9100:9100 --name nodex -v "/proc:/host/proc" -v "/sys:/host/sys" -v "/:/rootfs" --net="host" prom/node-exporter -collector.procfs /host/proc -collector.sysfs /host/proc -collector.filesystem.ignored-mount-points "^/(sys|proc|dev|host|etc)($|/)"
+ExecStop=-/usr/bin/docker stop nodex
+

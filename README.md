@@ -1,8 +1,8 @@
 ## Kubernetes -> Prometheus + Alertmanager + Grafana Dashboard
 
-This written under the assumption that you've got your own kubernetes cluster running in Google cloud.  I recommend getting [node_exporter](https://github.com/prometheus/node_exporter) running on all your nodes.  
+This written under the assumption that you've got your own kubernetes cluster running in Google cloud.  I also assume that you've got [node_exporter](https://github.com/prometheus/node_exporter) running on all your nodes.  Here's a [sample node_exporter systemd service file](nodexporter.service).  At the very least you can pull the `docker run` from it and use it in whatever OS you're using.
 
-What I suggest doing is get this all working first end to end before you start customizing.  Here is what you should have at the end:
+What I suggest doing is get this all working first end to end before you go beyond minimal config changes (i.e. start doing crazy customizations).  Here is what you should have at the end:
 
   - prometheus scraping node and kubernetes data
   - node_exporter on all nodes
@@ -11,15 +11,15 @@ What I suggest doing is get this all working first end to end before you start c
 
 ### Pre-flight -- Check all the configs, make them your own
 
-In the `cluster` subdir, you'll see 3 config files and a bash script to create a kubernetes [configmap](http://kubernetes.io/docs/user-guide/configmap/) in the cluster using them.  We want to change these to match our own environments.
+In the `cluster` subdir, you'll see 3 config files and a bash script to create a kubernetes [configmap](http://kubernetes.io/docs/user-guide/configmap/) in the cluster.  We want to change these to match our own environments.
 
 #### kube.rules
 
-This is a collection of rules for alerting that we'll load into prometheus.  This should be ok as is to start with.  As you learn your environment more you can add, subtract, and modify from here.
+This is a collection of [rules for alerting](https://prometheus.io/docs/alerting/rules/) that we'll load into prometheus.  This should be ok as-is to start with.  As you learn your environment more you can add, subtract, and modify this file.
 
 #### am-simple.yml
 
-This is the configuration file for the alertmanager service.  You'll want to set the smtp configs up in the `global:` section and update the hipchat url if your organization has one different from the default.  I'm using sendgrid here, but change that to whatever smtp server you've got set up.
+This is the configuration file for the alertmanager service.  You'll want to set the smtp configs in the `global:` section and update the hipchat url if your organization has one different from the default.  I'm using `sendgrid` here, but change that to whatever smtp server you've got set up.
 
 Next hop down to the `receivers:` section and again set the email and hipchat settings to match your environment.  Note which token you want to retrieve to get access to the hipchat room specified (I only mention here because I biff this one a lot).
 
@@ -30,7 +30,7 @@ I blatantly stole this off the internet.  It works...  though the TLS stuff may 
 
 #### promtool -- or did I just break some stuff when changing those configs?
 
-This is an optional step, but not really.  You'll want to check your changed configs before you unleash them out on the world.  First download the binary as part of the [prometheus binary download](https://prometheus.io/download/).  Drop `promtool` into the directory with your prometheus.yml, rules, etc.
+This is an optional step but not really.  You'll want to check your changed configs before you unleash them out on the world.  First download the binary as part of the [prometheus binary download](https://prometheus.io/download/).  Drop `promtool` into the directory with your prometheus.yml, rules, etc.
 
 First test your prometheus config with:
 
@@ -52,14 +52,14 @@ Next lets take a crack at the alerting rules:
 ./promtool check-rules kube.rules
 ```
 
-Ok, now you're ready to move on.
+Ok, assuming you've fixed any problems you've found (out of scope for this doc) now you're ready to move on.
 
 
 ### Persistent Volumes
 
 Be sure you know [what you're getting into here first](http://kubernetes.io/docs/user-guide/persistent-volumes/).
 
-Pre-create the persistent volumes for prometheus and grafana.  If you don't care about the data, then you'll have to modify the yaml later.  **What that'll mean to you is that should you kill all the prometheus pods, you'll lose that data.**
+Pre-create the persistent volumes for prometheus and grafana.  If you don't care about the data, then you'll have to modify the yaml later.  **What that'll mean to you is that should you kill all the prometheus pods, you'll lose that data.**  Also, I assume that you're in `us-central1-a` zone for GCE -- change as applicable.
 
 ```
 gcloud compute disks create --size=4GB --zone=us-central1-a prom-cluster-volume
@@ -85,7 +85,7 @@ kubectl get configmaps
 You should see it there along with the `AGE` column which should be pretty fresh and new.
 
 
-### Start the Pods!!!
+### Bring it all up!!!
 
 First up we'll bring up the services for all three of the replication controllers:
 
@@ -109,7 +109,7 @@ NAME                      CLUSTER-IP      EXTERNAL-IP      PORT(S)    AGE
 
 Initially, `EXTERNAL-IP` might be empty.  Google cloud is busy in the background getting an IP and setting up a firewall rule for your new service.  Here's the good news -- it'll be fully accessible once you get some pods running behind the service.  *Here's the bad news -- it'll be open to the entire internet.*  So take a moment now to log into the google console to update these firewall rules to be locked down a bit.  Or not.  
 
-From the command line, you can maybe use the google cloud cli to update as well.  Get the list of firewall rules created automatically by kubernetes:
+From the command line, you can (maybe) use the google cloud cli to update as well.  Get the list of firewall rules created automatically by kubernetes:
 
 ```
 $ gcloud compute firewall-rules list | grep 'k8s-fw-'
@@ -133,7 +133,7 @@ Ok, once we've got that locked down, we're ready to spin up our deployments.
 
 #### Deploy Alertmanager
 
-This one should be easy-peasy.  The troubleshooting will come later when you can or cannot get mail or hipchat messages or whatever else you pushed in here.
+This one should be easy-peasy.  The troubleshooting will come later when you can or cannot get mail or hipchat messages or whatever else you pushed in here. 
 
 ```
 kubectl create -f am-deploy.yaml
@@ -175,7 +175,7 @@ then copy that name -- we'll use the example name of `am-cluster-46814560-271kv`
 kubectl logs -f am-cluster-46814560-271kv 
 ```
 
-and work out the troubleshooting there.  Most likely we'll be back :)  For now though -- forward!
+and work out the troubleshooting there.  Most likely we'll be back as we try to send mail and hipchat messages :)  For now though -- forward!
 
 
 #### Deploy Prometheus
