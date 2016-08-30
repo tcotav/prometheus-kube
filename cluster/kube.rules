@@ -69,4 +69,20 @@ ALERT ScrapeDurationSecondsHigh
     description = "Scrape Duration in Seconds at {{ $value }}s, threshold 4 seconds"
   }
 
+# warn on low disk space of nodes
+ALERT DiskFreeLowOnNodeRootPAGE
+  IF (node_filesystem_free{mountpoint!~"/rootfs.*"}/node_filesystem_size{mountpoint!~"/rootfs.*"} * 100 < 10)
+  LABELS { severity = "page" }
+  ANNOTATIONS {
+    summary = "Node FileSystem {{ $labels.instance }} Free Space Low" ,
+    description = "Node {{ $labels.instance }} / free at {{ $value }}%"
+  }
+
+ALERT DiskFreeLowOnNodeRootWARN
+  IF (node_filesystem_free{mountpoint!~"/rootfs.*"}/node_filesystem_size{mountpoint!~"/rootfs.*"} * 100 < 20)
+  LABELS { severity = "warn" }
+  ANNOTATIONS {
+    summary = "Node FileSystem {{ $labels.instance }} Free Space Low" ,
+    description = "Node {{ $labels.instance }} / free at {{ $value }}%"
+  }
 
