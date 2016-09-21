@@ -1,5 +1,9 @@
 ## Kubernetes -> Prometheus + Alertmanager + Grafana Dashboard
 
+This project contains a working starter kubernetes monitoring solution using prometheus.  There's probably other ways to do it with prometheus, but hopefully this gives you a good start or a sample to build off of.
+
+### Prelude
+
 This written under the assumption that you've got your own kubernetes cluster running in Google cloud.  I also assume that you've got [node_exporter](https://github.com/prometheus/node_exporter) running on all your nodes.  Here's a [sample node_exporter systemd service file](nodexporter.service).  At the very least you can pull the `docker run` from it and use it in whatever OS you're using.
 
 What I suggest doing is get this all working first end to end before you go beyond minimal config changes (i.e. start doing crazy customizations).  Here is what you should have at the end:
